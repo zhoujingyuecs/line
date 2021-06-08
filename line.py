@@ -61,11 +61,9 @@ def get_line_score(img):
 		for i in range(len(img[0])):
 			tmp_img.append(img[: , i])
 		img = np.array(tmp_img)
-	plt.imshow(img, cmap ='gray')
-	plt.show()
 	# Calculate the score.
 	# .1 Get the lines.
-	TOTAL_VALUE = 100
+	TOTAL_VALUE = 60
 	lines = []
 	for j in range(len(img[0])):
 		line = []
@@ -87,28 +85,71 @@ def get_line_score(img):
 				one_line = []
 		lines.append(line)
 	# .2 Remove the special case.
+	# .2.1 Remove wrong number's column
 	line_num = []
 	for i in range(len(lines)):
 		line_num.append(len(lines[i]))
-	# print(line_num)
 	usual_num = np.argmax(np.bincount(line_num))
-	# print(usual_num)
+	tmp_lines = lines
+	lines = []
+	for i in range(len(tmp_lines)):
+		if len(tmp_lines[i]) == usual_num:
+			lines.append(tmp_lines[i])
+	# .2.2 Remove wrong line's point
+	lines_top_avg = []
+	for j in range(len(lines[0])):
+		lines_top_avg.append(0)
 	for i in range(len(lines)):
-
-
-	# plt.subplot(211)
-	# plt.imshow(row_diff, cmap ='gray')
-	# plt.subplot(212)
-	# plt.imshow(column_diff, cmap ='gray')
-	# plt.show()
+		for j in range(len(lines[i])):
+			lines_top_avg[j] += lines[i][j][1]
+	for j in range(len(lines[0])):
+		lines_top_avg[j] /= len(lines)
+	tmp_lines = lines
+	lines = []
+	WRONG_LINE_MAX = 4
+	# print(lines_top_avg)
+	# print(np.asarray(tmp_lines))
+	for i in range(len(tmp_lines)):
+		flag = 1
+		for j in range(len(tmp_lines[i])):
+			# print(tmp_lines[i][j][1], lines_top_avg[j])
+			if abs(tmp_lines[i][j][1] - lines_top_avg[j]) > WRONG_LINE_MAX:
+				flag = 0
+				break
+		if flag == 1:
+			lines.append(tmp_lines[i])
+	# print(np.asarray(lines))
+	# .3 Sum the deflect.
+	data_num = 1
+	deflect_sum = 0
+	for i in range(len(lines) - 1):
+		for j in range(len(lines[i])):
+			deflect_sum += abs(lines[i][j][1] - lines[i + 1][j][1]) # Line top deflect.
+			deflect_sum += abs(lines[i][j][2] - lines[i + 1][j][2]) # Line bottom deflect.
+			data_num += 1
+	image_score = deflect_sum / data_num
+	return image_score, img, lines
 
 
 test_images = load_and_cut()
-for i in range(len(test_images)):
-	image_score = get_line_score(test_images[i])
-	print('Image', i ,'：')
-	plt.imshow(test_images[i], cmap = 'gray')
-	plt.show()
+plt.subplots_adjust(wspace = 0.3, hspace = 0.4)
+for k in range(len(test_images)):
+	image_score, img, lines = get_line_score(test_images[k])
+	print('Image', k ,'：', image_score)
+	# Show the reault.
+	plt.subplot(5, 6, k + 1)
+	plt.imshow(img, cmap ='gray')
+	for i in range(len(lines)):
+		for j in range(len(lines[i])):
+			plt.plot(lines[i][j][3], lines[i][j][1], 'o', color='g', markersize=1.)
+			plt.plot(lines[i][j][3], lines[i][j][2], 'o', color='r', markersize=2.)
+	title = 'score: ' + str(image_score)[:5]
+	plt.title(title, fontdict = {'weight':'normal','size': 10})
+plt.show()
+
+
+	# plt.imshow(test_images[i], cmap = 'gray')
+	# plt.show()
 
 
 
@@ -120,3 +161,20 @@ for i in range(len(test_images)):
 
 	# print(row_sum)
 	# print(column_sum)
+
+
+	# plt.subplot(211)
+	# plt.imshow(row_diff, cmap ='gray')
+	# plt.subplot(212)
+	# plt.imshow(column_diff, cmap ='gray')
+	# plt.show()
+
+	# Show the reault.
+	# plt.imshow(img, cmap ='gray')
+	# for i in range(len(lines)):
+	# 	for j in range(len(lines[i])):
+	# 		plt.plot(lines[i][j][3], lines[i][j][1], 'o', color='g', markersize=1.)
+	# 		plt.plot(lines[i][j][3], lines[i][j][2], 'o', color='r', markersize=2.)
+	# title = 'Score:' + str(deflect_sum / data_num)
+	# plt.title(title)
+	# plt.show()
