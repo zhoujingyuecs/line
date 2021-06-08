@@ -61,23 +61,36 @@ def get_line_score(img):
 		for i in range(len(img[0])):
 			tmp_img.append(img[: , i])
 		img = np.array(tmp_img)
+	# Thresholding.
+	gray_img = img.copy()
+	mid = img.sum() / len(img) / len(img[0]) * 5 / 4
+	for i in range(len(img)):
+		for j in range(len(img[0])):
+			if img[i][j] > mid:
+				img[i][j] = 255
+			else:
+				img[i][j] = 0
 	# Calculate the score.
 	# .1 Get the lines.
-	TOTAL_VALUE = 60
+	MID_VALUE = 100
+	LINE_VALUE = 200
 	lines = []
 	for j in range(len(img[0])):
 		line = []
 		one_line = [] # [mid, top, bottom, column]
-		for i in range(1, len(img) - 1):
-			if img[i][j] > img[i + 1][j] and img[i][j] > img[i - 1][j]:
+		i = 0
+		while i < len(img) - 1:
+			i += 1
+			if img[i].sum() / len(img[i]) > LINE_VALUE:
 				one_line.append(i)
 				for k in range(i, 0, -1):
-					if img[i][j] - img[k][j] > TOTAL_VALUE:
+					if img[i][j] - img[k][j] > MID_VALUE:
 						one_line.append(k)
 						break
 				for k in range(i, len(img), 1):
-					if img[i][j] - img[k][j] > TOTAL_VALUE:
+					if img[i][j] - img[k][j] > MID_VALUE:
 						one_line.append(k)
+						i = k
 						break
 				if len(one_line) == 3:
 					one_line.append(j)
@@ -95,30 +108,6 @@ def get_line_score(img):
 	for i in range(len(tmp_lines)):
 		if len(tmp_lines[i]) == usual_num:
 			lines.append(tmp_lines[i])
-	# .2.2 Remove wrong line's point
-	lines_top_avg = []
-	for j in range(len(lines[0])):
-		lines_top_avg.append(0)
-	for i in range(len(lines)):
-		for j in range(len(lines[i])):
-			lines_top_avg[j] += lines[i][j][1]
-	for j in range(len(lines[0])):
-		lines_top_avg[j] /= len(lines)
-	tmp_lines = lines
-	lines = []
-	WRONG_LINE_MAX = 4
-	# print(lines_top_avg)
-	# print(np.asarray(tmp_lines))
-	for i in range(len(tmp_lines)):
-		flag = 1
-		for j in range(len(tmp_lines[i])):
-			# print(tmp_lines[i][j][1], lines_top_avg[j])
-			if abs(tmp_lines[i][j][1] - lines_top_avg[j]) > WRONG_LINE_MAX:
-				flag = 0
-				break
-		if flag == 1:
-			lines.append(tmp_lines[i])
-	# print(np.asarray(lines))
 	# .3 Sum the deflect.
 	data_num = 1
 	deflect_sum = 0
@@ -128,7 +117,7 @@ def get_line_score(img):
 			deflect_sum += abs(lines[i][j][2] - lines[i + 1][j][2]) # Line bottom deflect.
 			data_num += 1
 	image_score = deflect_sum / data_num
-	return image_score, img, lines
+	return image_score, gray_img, lines
 
 
 test_images = load_and_cut()
@@ -178,3 +167,50 @@ plt.show()
 	# title = 'Score:' + str(deflect_sum / data_num)
 	# plt.title(title)
 	# plt.show()
+
+	# .2.2 Remove wrong line's point
+	# lines_top_avg = []
+	# for j in range(len(lines[0])):
+	# 	lines_top_avg.append(0)
+	# for i in range(len(lines)):
+	# 	for j in range(len(lines[i])):
+	# 		lines_top_avg[j] += lines[i][j][1]
+	# for j in range(len(lines[0])):
+	# 	lines_top_avg[j] /= len(lines)
+	# tmp_lines = lines
+	# lines = []
+	# WRONG_LINE_MAX = 4
+	# for i in range(len(tmp_lines)):
+	# 	flag = 1
+	# 	for j in range(len(tmp_lines[i])):
+	# 		if abs(tmp_lines[i][j][1] - lines_top_avg[j]) > WRONG_LINE_MAX:
+	# 			flag = 0
+	# 			break
+	# 	if flag == 1:
+	# 		lines.append(tmp_lines[i])
+	# print(np.asarray(lines))
+
+	# .2.2 Remove wrong line's point
+	# lines_top_avg = []
+	# for j in range(len(lines[0])):
+	# 	lines_top_avg.append(0)
+	# for i in range(len(lines)):
+	# 	for j in range(len(lines[i])):
+	# 		lines_top_avg[j] += lines[i][j][1]
+	# for j in range(len(lines[0])):
+	# 	lines_top_avg[j] /= len(lines)
+	# tmp_lines = lines
+	# lines = []
+	# WRONG_LINE_MAX = 2
+	# for i in range(len(tmp_lines) - 1):
+	# 	flag = 1
+	# 	for j in range(len(tmp_lines[i])):
+	# 		if abs(tmp_lines[i][j][1] - tmp_lines[i + 1][j][1]) > WRONG_LINE_MAX:
+	# 			flag = 0
+	# 			break
+	# 		if abs(tmp_lines[i][j][2] - tmp_lines[i + 1][j][2]) > WRONG_LINE_MAX:
+	# 			flag = 0
+	# 			break
+	# 	if flag == 1:
+	# 		lines.append(tmp_lines[i])
+	# print(np.asarray(lines))
