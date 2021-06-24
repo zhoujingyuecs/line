@@ -2,9 +2,67 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Cutting the picture when continue LINE_LENGTH pixel have value.
+def get_the_cut_line(img):
+	# row_cut = []
+	# column_cut = []
+	# one_cut = []
+	# LINE_LENGTH = 10
+	# MID_VALUE = 128
+	# line_flag = 0 # 0: write, 1: black, 2: line start, 3: line end.
+	# for i in range(len(img)):
+	# 	line_sum = 0
+	# 	for j in range(LINE_LENGTH):
+	# 		line_sum += img[i][j]
+	# 	for j in range(len(img[i]) - LINE_LENGTH):
+	# 		if line_sum < MID_VALUE * LINE_LENGTH:
+	# 			if line_flag == 0:
+	# 				line_flag = 2
+	# 			break
+	# 		if line_flag == 1 and j == len(img[i]) - LINE_LENGTH - 1:
+	# 			line_flag = 3
+	# 			break
+	# 		line_sum -= img[i][j]
+	# 		line_sum += img[i][j + LINE_LENGTH]
+	# 	if line_flag == 2:
+	# 		one_cut.append(i)
+	# 		line_flag = 1
+	# 	if line_flag == 3:
+	# 		one_cut.append(i)
+	# 		line_flag = 0
+	# 		row_cut.append(one_cut)
+	# 		one_cut = []
+	# line_flag = 0 # 0: write, 1: black, 2: line start, 3: line end.
+	# for j in range(len(img[0])):
+	# 	line_sum = 0
+	# 	for i in range(LINE_LENGTH):
+	# 		line_sum += img[i][j]
+	# 	for i in range(len(img) - LINE_LENGTH):
+	# 		if line_sum < MID_VALUE * LINE_LENGTH:
+	# 			if line_flag == 0:
+	# 				line_flag = 2
+	# 			break
+	# 		if line_flag == 1 and i == len(img) - LINE_LENGTH - 1:
+	# 			line_flag = 3
+	# 			break
+	# 		line_sum -= img[i][j]
+	# 		line_sum += img[i + LINE_LENGTH][j]
+	# 	if line_flag == 2:
+	# 		one_cut.append(j)
+	# 		line_flag = 1
+	# 	if line_flag == 3:
+	# 		one_cut.append(j)
+	# 		line_flag = 0
+	# 		column_cut.append(one_cut)
+	# 		one_cut = []
+	row_cut = [[30, 167], [203, 495], [511, 824]]
+	column_cut = [[70, 427], [499, 853], [918, 1276], [1348, 1702], [1767, 2125], 
+	[2197, 2552], [2617, 2975], [3047, 3402], [3467, 3838], [3894, 4251]]
+	return row_cut, column_cut
+
 def load_and_cut():
 	# Read the image.
-	img_bmp = Image.open('./test.bmp') 
+	img_bmp = Image.open('./test.big.bmp') 
 	img_rgb = np.array(img_bmp)
 	# Only use gray value.
 	img = []
@@ -15,37 +73,38 @@ def load_and_cut():
 		img.append(one_img)
 	img = np.array(img)
 	# Only use one area.
-	img = img[74:180, 35:580]
+	img = img[560:1400, 300:4600]
 	# Calculate the cut.
-	row_sum = img.sum(axis = 1)
-	column_sum = img.sum(axis = 0)
-	row_sum = row_sum / len(img[0])
-	row_sum = row_sum.astype(int)
-	column_sum = column_sum / len(img)
-	column_sum = column_sum.astype(int)
-	CUT_VALUE = 150
-	row_cut = []
-	column_cut = []
-	one_cut = []
-	for i in range(len(row_sum) - 1):
-		if row_sum[i] > CUT_VALUE and row_sum[i + 1] < CUT_VALUE:
-			one_cut.append(i)
-		if row_sum[i] < CUT_VALUE and row_sum[i + 1] > CUT_VALUE:
-			one_cut.append(i)
-			row_cut.append(one_cut)
-			one_cut = []
-	for i in range(len(column_sum) - 1):
-		if column_sum[i] > CUT_VALUE and column_sum[i + 1] < CUT_VALUE:
-			one_cut.append(i)
-		if column_sum[i] < CUT_VALUE and column_sum[i + 1] > CUT_VALUE:
-			one_cut.append(i)
-			column_cut.append(one_cut)
-			one_cut = []
+	# .1 Thresholding.
+	gray_img = img.copy()
+	mid = img.sum() / len(img) / len(img[0])
+	for i in range(len(img)):
+		for j in range(len(img[0])):
+			if img[i][j] > mid:
+				img[i][j] = 255
+			else:
+				img[i][j] = 0
+	# Show the using area in picture.
+	plt.imshow(img, cmap = 'gray')
+	plt.show()
+	# .2 Get the cut line.
+	row_cut, column_cut = get_the_cut_line(img)
+	print(row_cut)
+	print(column_cut)
 	# Cut the image.
 	imgs = []
 	for i in range(len(row_cut)):
 		for j in range(len(column_cut)):
-			imgs.append(img[row_cut[i][0]:row_cut[i][1], column_cut[j][0]:column_cut[j][1]])
+			imgs.append(gray_img[row_cut[i][0]:row_cut[i][1], column_cut[j][0]:column_cut[j][1]])
+
+	plt.imshow(img, cmap = 'gray')
+	for i in range(len(row_cut)):
+		plt.plot(0, row_cut[i][0], 'o', color='g', markersize=3.)
+		plt.plot(0, row_cut[i][1], 'o', color='r', markersize=3.)
+	for i in range(len(column_cut)):
+		plt.plot(column_cut[i][0], 0, 'o', color='g', markersize=3.)
+		plt.plot(column_cut[i][1], 0, 'o', color='r', markersize=3.)
+	plt.show()
 	return imgs
 
 def get_line_score(img):
@@ -63,7 +122,7 @@ def get_line_score(img):
 		img = np.array(tmp_img)
 	# Thresholding.
 	gray_img = img.copy()
-	mid = img.sum() / len(img) / len(img[0]) * 5 / 4
+	mid = img.sum() / len(img) / len(img[0]) * 6 / 5
 	for i in range(len(img)):
 		for j in range(len(img[0])):
 			if img[i][j] > mid:
@@ -108,6 +167,16 @@ def get_line_score(img):
 	for i in range(len(tmp_lines)):
 		if len(tmp_lines[i]) == usual_num:
 			lines.append(tmp_lines[i])
+	# .2.2 Remove wrong line's point
+	WRONG_LINE_MAX = 2
+	for i in range(len(lines) - 1):
+		flag = 1
+		for j in range(len(lines[i])):
+			if abs(lines[i][j][1] - lines[i + 1][j][1]) > WRONG_LINE_MAX:
+				lines[i + 1][j][1] = lines[i][j][1]
+			if abs(lines[i][j][2] - lines[i + 1][j][2]) > WRONG_LINE_MAX:
+				lines[i + 1][j][2] = lines[i][j][2]
+	# print(np.asarray(lines))
 	# .3 Sum the deflect.
 	data_num = 1
 	deflect_sum = 0
@@ -135,82 +204,3 @@ for k in range(len(test_images)):
 	title = 'score: ' + str(image_score)[:5]
 	plt.title(title, fontdict = {'weight':'normal','size': 10})
 plt.show()
-
-
-	# plt.imshow(test_images[i], cmap = 'gray')
-	# plt.show()
-
-
-
-# img_bmp.show()
-
-# plt.subplot(222)
-# plt.imshow(img, cmap ='gray')
-# plt.show()
-
-	# print(row_sum)
-	# print(column_sum)
-
-
-	# plt.subplot(211)
-	# plt.imshow(row_diff, cmap ='gray')
-	# plt.subplot(212)
-	# plt.imshow(column_diff, cmap ='gray')
-	# plt.show()
-
-	# Show the reault.
-	# plt.imshow(img, cmap ='gray')
-	# for i in range(len(lines)):
-	# 	for j in range(len(lines[i])):
-	# 		plt.plot(lines[i][j][3], lines[i][j][1], 'o', color='g', markersize=1.)
-	# 		plt.plot(lines[i][j][3], lines[i][j][2], 'o', color='r', markersize=2.)
-	# title = 'Score:' + str(deflect_sum / data_num)
-	# plt.title(title)
-	# plt.show()
-
-	# .2.2 Remove wrong line's point
-	# lines_top_avg = []
-	# for j in range(len(lines[0])):
-	# 	lines_top_avg.append(0)
-	# for i in range(len(lines)):
-	# 	for j in range(len(lines[i])):
-	# 		lines_top_avg[j] += lines[i][j][1]
-	# for j in range(len(lines[0])):
-	# 	lines_top_avg[j] /= len(lines)
-	# tmp_lines = lines
-	# lines = []
-	# WRONG_LINE_MAX = 4
-	# for i in range(len(tmp_lines)):
-	# 	flag = 1
-	# 	for j in range(len(tmp_lines[i])):
-	# 		if abs(tmp_lines[i][j][1] - lines_top_avg[j]) > WRONG_LINE_MAX:
-	# 			flag = 0
-	# 			break
-	# 	if flag == 1:
-	# 		lines.append(tmp_lines[i])
-	# print(np.asarray(lines))
-
-	# .2.2 Remove wrong line's point
-	# lines_top_avg = []
-	# for j in range(len(lines[0])):
-	# 	lines_top_avg.append(0)
-	# for i in range(len(lines)):
-	# 	for j in range(len(lines[i])):
-	# 		lines_top_avg[j] += lines[i][j][1]
-	# for j in range(len(lines[0])):
-	# 	lines_top_avg[j] /= len(lines)
-	# tmp_lines = lines
-	# lines = []
-	# WRONG_LINE_MAX = 2
-	# for i in range(len(tmp_lines) - 1):
-	# 	flag = 1
-	# 	for j in range(len(tmp_lines[i])):
-	# 		if abs(tmp_lines[i][j][1] - tmp_lines[i + 1][j][1]) > WRONG_LINE_MAX:
-	# 			flag = 0
-	# 			break
-	# 		if abs(tmp_lines[i][j][2] - tmp_lines[i + 1][j][2]) > WRONG_LINE_MAX:
-	# 			flag = 0
-	# 			break
-	# 	if flag == 1:
-	# 		lines.append(tmp_lines[i])
-	# print(np.asarray(lines))
